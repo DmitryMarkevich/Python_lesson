@@ -71,7 +71,7 @@ def test_analyzer():
     The function tests the Analyzer class.
 
     """
-    for elem in [125, 18, 'Pythonist', 'hello', 25, 111, 'list', 22, 'values', 'person', 88]:
+    for elem in [125, 18, 'Pythonist', 'hello', 25, 111, 'list', 22, 'values', 'person', 88, [5, 5], (1, 2)]:
         analyze_1 = Analyzer(elem)
         print(f"self.value = {analyze_1.value}, self.analysis =  {analyze_1.analysis}\n")
 

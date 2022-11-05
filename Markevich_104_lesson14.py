@@ -128,7 +128,7 @@ def sort_array(array: Union[list, tuple]) -> list:
     return sorted(string_array, key=len) + sorted(array_of_numbers)
 
 
-data_list = [100, 'python', 50, 'hello', 25, 'file', 500, 'lesson_OOP']
+data_list = [100, 'python', 50, 'hello', 25, 'file', 500, 'lesson17_OOP']
 f = "file_lesson_14.txt"
 
 # Запись в файл
