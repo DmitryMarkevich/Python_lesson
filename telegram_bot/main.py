@@ -10,7 +10,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 import config  # Импортируем файл config
-from keyboard import start  # Импортируем файл keyboard
+import keyboard  # Импортируем файл keyboard
 
 import logging
 
@@ -23,47 +23,226 @@ dp = Dispatcher(bot, storage=storage)  # хранилище состояний �
 logging.basicConfig(format=u'%(filename)s [LINE:%(lineno)d] #%(levelname)-8s [%(asctime)s] %(message)s',
                     filename='log.txt', level=logging.INFO)
 
-count = 0
+"""_______________________________________________FSM________________________________________________________"""
 
 
-@dp.message_handler(commands="start")
+class Meinfo(StatesGroup):
+    Q1 = State()
+    Q2 = State()
+
+
+@dp.message_handler(Command("me"), state=None)  # Создаем команду /me для админа
+async def enter_meinfo(message: types.Message):
+    if message.chat.id == config.admin:
+        await message.answer("Начинаем настройку.\n"
+                             "№1 Введите линк на ваш профиль.")  # Бот спрашивает ссылку
+
+        await Meinfo.Q1.set()  # И начинает ждать наш ответ
+
+
+@dp.message_handler(state=Meinfo.Q1)  # Как только бот получит ответ, вот это выполнится
+async def answer_q1(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer1=answer)  # Тут же он записывает наш ответ (наш линк)
+
+    await message.answer("Линк сохранен. \n"
+                         "№2 Введите текст.")
+
+    await Meinfo.Q2.set()  # Ждет пока мы введем текст
+
+
+@dp.message_handler(state=Meinfo.Q2)  # Текст пришел а значит переходим к этому шагу
+async def answer_q2(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer2=answer)  # Записываем второй ответ
+
+    await message.answer("Текст сохранен.")
+
+    data = await state.get_data()
+    answer1 = data.get("answer1")  # Здесь берутся ответы из словаря и присваиваются переменным
+    answer2 = data.get("answer2")
+
+    with open("link.txt", 'w', encoding='utf-8') as joinedFile:
+        joinedFile.write(str(answer1))
+
+    with open("text.txt", 'w', encoding='utf-8') as joinedFile:
+        joinedFile.write(str(answer2))
+
+    await message.answer(f"Ваша ссылка на профиль: {answer1}\nВаш текст:\n{answer2}")
+
+    await state.finish()
+
+
+"""_______________________________________________FSM_registration____________________________________________"""
+
+
+class MeinfoReg(StatesGroup):
+    Q1 = State()
+    Q2 = State()
+    Q3 = State()
+
+
+@dp.message_handler(text_contains='Регистрация', state=None)  # Отлавливаем соообщение "Регистрация"
+async def enter_meinfo_new(message):
+    if message.chat.id:
+        await message.answer("Начинаем регистрацию.\n"
+                             "№1 Введите Ваше имя.")  # Бот спрашивает имя
+
+        await MeinfoReg.Q1.set()  # И начинает ждать наш ответ
+
+
+@dp.message_handler(state=MeinfoReg.Q1)  # Как только бот получит ответ, вот это выполнится
+async def answer_q1(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer1=answer)  # Тут же он записывает наш ответ
+
+    await message.answer("Имя записано. \n"
+                         "№2 Введите фамилию.")
+
+    await MeinfoReg.Q2.set()  # Ждет пока мы введем текст
+
+
+@dp.message_handler(state=MeinfoReg.Q2)  # Текст пришел а значит переходим к этому шагу
+async def answer_q2(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer2=answer)  # Записываем второй ответ
+
+    await message.answer("Фамилия записана.\n"
+                         "№3 Введите телефон.")
+
+    await MeinfoReg.Q3.set()  # Ждет пока мы введем текст
+
+
+@dp.message_handler(state=MeinfoReg.Q3)  # Текст пришел а значит переходим к этому шагу
+async def answer_q3(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer3=answer)  # Записываем второй ответ
+
+    await message.answer("Данные приняты.")
+
+    data = await state.get_data()
+    answer1 = data.get("answer1")  # Здесь берутся ответы из словаря и присваиваются переменным
+    answer2 = data.get("answer2")
+    answer3 = data.get("answer3")
+
+    with open("user_data.txt", 'a', encoding='utf-8') as joinedFile:
+        joinedFile.write(str(answer1 + ',' + answer2 + ',' + answer3 + '\n'))
+
+    await message.answer("Регистрация прошла успешно.")
+
+    await state.finish()
+
+
+"""_______________________________________________start______________________________________________________"""
+
+
+@dp.message_handler(commands="start", commands_prefix='!/', state=None)
 #  Задаем функцию, которая отправит сообщение на команду "start"
-async def welcome(message: types.Message):
-    with open("user.txt", "r") as joined_file:
-        joined_users = set()
-        for line in joined_file:
-            joined_users.add(line.strip())
+async def welcome(message):
+    with open("user.txt", "r") as joinedFile:
+        joinedUsers = set()
+        for line in joinedFile:
+            joinedUsers.add(line.strip())
 
-    if not str(message.chat.id) in joined_users:
-        with open("user.txt", "a") as joined_file:
-            joined_file.write(str(message.chat.id) + '\n')
-            joined_users.add(message.chat.id)
+    if not str(message.chat.id) in joinedUsers:
+        with open("user.txt", "a") as joinedFile:
+            joinedFile.write(str(message.chat.id) + '\n')
+            joinedUsers.add(message.chat.id)
 
     await bot.send_message(message.chat.id, f"ПРИВЕТ, *{message.from_user.first_name},* БОТ РАБОТАЕТ",
-                           reply_markup=start, parse_mode='Markdown')
+                           reply_markup=keyboard.start, parse_mode='Markdown')
 
 
-@dp.message_handler(commands="Информация")
-#  Задаем функцию, которая отправит сообщение на команду "Информация"
-async def cmd_test2(message: types.Message):
-    global count
-    str_info = ''
-    try:
-        with open('info.txt', 'r', encoding='utf-8') as file:
+"""________________________________________________________________________________________________________________"""
+
+
+@dp.message_handler(commands=['rassilka'], commands_prefix='!/')
+# задаем функцию обработчик
+async def mailing_list(message: types.Message):
+    # сверяем id пославшего сообщение с id админа
+    if message.chat.id == config.admin:
+        # отправляем сообщение
+        await bot.send_message(message.chat.id, f'Рассылка началась'
+                                                f'\nБот оповестит, когда закончит рассылку',
+                               parse_mode=types.ParseMode.MARKDOWN_V2)
+        # задаем переменные для хранения принявших и заблокировавших
+        recieve_users, block_users = 0, 0
+        # открываем user.txt в режиме чтения
+        with open('user.txt', 'r') as file:
+            # создаем множество всех пользователей
+            joinedUsers = set()
+            # проходим циклу по всем id в файле
             for line in file:
-                str_info += line
+                # добавляем во множество id
+                joinedUsers.add(line.strip())
+            # запускаем цикл
+            for user in joinedUsers:
+                try:
+                    await bot.send_photo(user, open('photo.PNG', 'rb'), (message.text[message.text.find(' '):]
+                                                                         if ' ' in message.text else "Вот Вам фото"))
+                    recieve_users += 1
+                except:
+                    block_users += 1
+                await asyncio.sleep(0.4)
+            await bot.send_message(message.chat.id, f'Рассылка завершена \n'
+                                                    f'Сообщение получили: {recieve_users} пользователей \n'
+                                                    f'Заблокировали бота: {block_users}',
+                                   parse_mode=types.ParseMode.MARKDOWN_V2)
 
-    except FileNotFoundError:
-        print("Невозможно открыть файл.")
-    count += 1
-    await message.reply(str_info)
+
+"""___________________________________________________join______________________________________________________"""
 
 
-@dp.message_handler(commands="Статистика")
-#  Задаем функцию, которая отправит сообщение на команду "Статистика"
-async def cmd_test3(message: types.Message):
-    await message.reply(f"Количество запросов по литературе: {count}")
+@dp.callback_query_handler(text_contains='join')
+async def join(call: types.CallbackQuery):
+    if call.message.chat.id == config.admin:
+        d = sum(1 for line in open('user.txt', 'r'))
+        await bot.edit_message_text(chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id,
+                                    text=f'Вот статистика бота: *{d}* человек',
+                                    parse_mode='Markdown')
+    else:
+        await bot.edit_message_text(chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id,
+                                    text="У тебя нет админки\n Куда ты полез",
+                                    parse_mode='Markdown')
 
+
+"""________________________________________________cancel________________________________________________________"""
+
+
+@dp.callback_query_handler(text_contains='cancel')
+async def cancel(call: types.CallbackQuery):
+    await bot.edit_message_text(chat_id=call.message.chat.id,
+                                message_id=call.message.message_id,
+                                text="Ты вернулся в главное меню. Жми опять кнопки ",
+                                parse_mode='Markdown')
+
+
+"""_______________________________________________________________________________________________________________"""
+
+
+@dp.message_handler(content_types=['text'])
+#  Задаем функцию, которая отправит сообщение на команды-сообщения "Статистика", "Информация" и "Разработчик"
+async def get_message(message):
+    if message.text == "Информация":
+        await bot.send_message(message.chat.id, text="Информация \n Бот создан специально для обучения",
+                               parse_mode='Markdown')
+    if message.text == "Статистика":
+        await bot.send_message(message.chat.id, text="Хочешь просмотреть статистику бота", reply_markup=keyboard.stats,
+                               parse_mode='Markdown')
+
+    if message.text == "Разработчик":
+        with open("link.txt", 'r', encoding='utf-8') as link_1:
+            link = link_1.read()
+
+        with open("text.txt", 'r', encoding='utf-8') as text_1:
+            text = text_1.read()
+
+        await bot.send_message(message.chat.id, text=f"Создатель {link}\n{text}", parse_mode='HTML')
+
+
+"""_____________________________________точка входа_____________________________________________________________"""
 
 #  Создаем точку входа
 if __name__ == "__main__":
