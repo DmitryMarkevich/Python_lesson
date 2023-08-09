@@ -13,6 +13,9 @@ class Analyzer(object):
         self.length_value = self.element_length(value)
         self.analysis = self.parse_property()
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.value!r}, {self.length_value!r}, {self.analysis!r})"
+
     def element_length(self, y: Union[str, int]) -> int:
         """
         The method takes one argument.
