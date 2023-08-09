@@ -42,12 +42,8 @@ def define_figure(int_: int) -> None:
                    9: 'девятиугольник',
                    10: 'многогранник',
                    }
-    if int_ in dict_figure:
-        for key in dict_figure:
-            if key == int_:
-                print(f"Это фигура: {dict_figure[key].upper()}")
-    else:
-        print("Вы ввели некорректные данные.")
+
+    return dict_figure.get(int_, 'Вы ввели некорректные данные.').upper()
 
 
 # Задача №3
@@ -245,7 +241,7 @@ print()
 
 # Задача №2
 print("Задача №2")
-define_figure(int(input("Введите количество сторон фигуры (от 3 до 10): ")))
+print(define_figure(int(input("Введите количество сторон фигуры (от 3 до 10): "))))
 print()
 
 # Задача №3
